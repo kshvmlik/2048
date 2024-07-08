@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2048</title>
+    <style>
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            text-align: center;
+            background-color: #faf8ef;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh; /* Ensure full viewport height */
+        }
+
+        h1 {
+            font-size: 80px; /* Larger font size for the heading */
+            margin: 20px 0;
+            color: #776e65; /* Dark brown color for headings */
+        }
+
+        #header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        #controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin: 0 10px;
+            cursor: pointer;
+            background-color: #bbada0; /* Light brown background for buttons */
+            color: white;
+            border: none;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #d4c7ba; /* Darker brown background on hover */
+        }
+
+        #game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        #board {
+            width: 400px; /* Adjust as needed */
+            height: 400px; /* Adjust as needed */
+            background-color: #cdc1b5;
+            border: 6px solid #bbada0;
+            display: flex;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .tile {
+            width: 90px;
+            height: 90px;
+            border: 5px solid #bbada0;
+            font-size: 40px;
+            font-weight: bold;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* colored tiles */
+        .x2 { background-color: #eee4da; color: #727371; }
+        .x4 { background-color: #ece0ca; color: #727371; }
+        .x8 { background-color: #f4b17a; color: white; }
+        .x16{ background-color: #f59575; color: white; }
+        .x32{ background-color: #f57c5f; color: white; }
+        .x64{ background-color: #f65d3b; color: white; }
+        .x128{ background-color: #edce71; color: white; }
+        .x256{ background-color: #edcc63; color: white; }
+        .x512{ background-color: #edc651; color: white; }
+        .x1024{ background-color: #eec744; color: white; }
+        .x2048{ background-color: #ecc230; color: white; }
+        .x4096 { background-color: #fe3d3d; color: white; }
+        .x8192 { background-color: #ff2020; color: white; }
+
+        #game-over {
+            display: none;
+            font-size: 24px;
+            font-weight: bold;
+            color: red;
+            margin-top: 20px;
+        }
+
+        #rules {
+            display: none;
+            margin: 20px;
+            border: 1px solid #bbada0;
+            padding: 10px;
+            background-color: #f9f6f2;
+            width: 300px;
+            margin: 20px auto;
+            text-align: left;
+        }
+
+        #rules.active {
+            display: block; /* Show rules when active class is applied */
+        }
+
+        #show-rules {
+            cursor: pointer;
+            color: blue;
+            text-decoration: underline;
+            margin: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="header">
+        <h1>2048</h1>
+    </div>
+    
+    <div id="controls">
+        <button id="start-game">Start Game</button>
+        <button id="restart-game">Restart Game</button>
+        <h2>Score: <span id="score">0</span></h2>
+    </div>
+
+    <div id="game-container" style="display:none;">
+        <div id="board"></div>
+        <div id="game-over">Game Over!</div>
+    </div>
+
+    <div id="rules">
+        <h2>Game Rules</h2>
+        <p>2048 is a popular single-player sliding block puzzle game.</p>
+        <ul>
+            <li>The game is played on a 4x4 grid.</li>
+            <li>At the start, two tiles with a value of either 2 or 4 are placed randomly on the grid.</li>
+            <li>Move tiles up, down, left, or right to combine them.</li>
+            <li>When two tiles with the same number touch, they merge into one.</li>
+            <li>A new tile with a value of 2 or 4 appears after each move.</li>
+            <li>The game ends when there are no legal moves left.</li>
+        </ul>
+    </div>
+
+    <p id="show-rules">Show Rules</p>
+    <div class="footer">
+        &copy; 2024 India | <a href="https://www.linkedin.com/in/keshvmlik/" class="namelink" target="_blank">Keshav Malik</a>
+    </div>
+    
+    
+
+    <script>
+        var board;
+        var score = 0;
+        var rows = 4;
+        var columns = 4;
+
+        window.onload = function() {
+            document.getElementById("start-game").onclick = startGame;
+            document.getElementById("restart-game").onclick = restartGame;
+            document.getElementById("show-rules").onclick = toggleRules;
+        }
+
+        function toggleRules() {
+            let rulesDiv = document.getElementById("rules");
+            rulesDiv.classList.toggle("active");
+        }
+
+        function startGame() {
+            document.getElementById("game-container").style.display = "block";
+            document.getElementById("controls").style.display = "flex";
+            setGame();
+        }
+
+        function restartGame() {
+            score = 0;
+            document.getElementById("score").innerText = score;
+            document.getElementById("game-over").style.display = "none";
+            setGame();
+        }
+
+        function setGame() {
+            board = [
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
+                [0, 0, 0, 0]
+            ];
+
+            let boardDiv = document.getElementById("board");
+            boardDiv.innerHTML = "";
+
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < columns; c++) {
+                    let tile = document.createElement("div");
+                    tile.id = r.toString() + "-" + c.toString();
+                    let num = board[r][c];
+                    updateTile(tile, num);
+                    boardDiv.append(tile);
+                }
+            }
+            setTwo();
+            setTwo();
+        }
+
+        function updateTile(tile, num) {
+            tile.innerText = "";
+            tile.classList.value = "";
+            tile.classList.add("tile");
+            if (num > 0) {
+                tile.innerText = num.toString();
+                if (num <= 4096) {
+                    tile.classList.add("x"+num.toString());
+                } else {
+                    tile.classList.add("x8192");
+                }
+            }
+        }
+
+        document.addEventListener('keyup', (e) => {
+            if (e.code == "ArrowLeft") {
+                slideLeft();
+                setTwo();
+            }
+            else if (e.code == "ArrowRight") {
+                slideRight();
+                setTwo();
+            }
+            else if (e.code == "ArrowUp") {
+                slideUp();
+                setTwo();
+            }
+            else if (e.code == "ArrowDown") {
+                slideDown();
+                setTwo();
+            }
+            document.getElementById("score").innerText = score;
+            if (!hasMoves()) {
+                document.getElementById("game-over").style.display = "block";
+            }
+        })
+
+        function filterZero(row){
+            return row.filter(num => num != 0);
+        }
+
+        function slide(row) {
+            row = filterZero(row);
+            for (let i = 0; i < row.length-1; i++){
+                if (row[i] == row[i+1]) {
+                    row[i] *= 2;
+                    row[i+1] = 0;
+                    score += row[i];
+                }
+            }
+            row = filterZero(row);
+            while (row.length < columns) {
+                row.push(0);
+            }
+            return row;
+        }
+
+        function slideLeft() {
+            for (let r = 0; r < rows; r++) {
+                let row = board[r];
+                row = slide(row);
+                board[r] = row;
+                for (let c = 0; c < columns; c++){
+                    let tile = document.getElementById(r.toString() + "-" + c.toString());
+                    let num = board[r][c];
+                    updateTile(tile, num);
+                }
+            }
+        }
+
+        function slideRight() {
+            for (let r = 0; r < rows; r++) {
+                let row = board[r];
+                row.reverse();
+                row = slide(row);
+                board[r] = row.reverse();
+                for (let c = 0; c < columns; c++){
+                    let tile = document.getElementById(r.toString() + "-" + c.toString());
+                    let num = board[r][c];
+                    updateTile(tile, num);
+                }
+            }
+        }
+
+        function slideUp() {
+            for (let c = 0; c < columns; c++) {
+                let row = [board[0][c], board[1][c], board[2][c], board[3][c]];
+                row = slide(row);
+                for (let r = 0; r < rows; r++){
+                    board[r][c] = row[r];
+                    let tile = document.getElementById(r.toString() + "-" + c.toString());
+                    let num = board[r][c];
+                    updateTile(tile, num);
+                }
+            }
+        }
+
+        function slideDown() {
+            for (let c = 0; c < columns; c++) {
+                let row = [board[0][c], board[1][c], board[2][c], board[3][c]];
+                row.reverse();
+                row = slide(row);
+                row.reverse();
+                for (let r = 0; r < rows; r++){
+                    board[r][c] = row[r];
+                    let tile = document.getElementById(r.toString() + "-" + c.toString());
+                    let num = board[r][c];
+                    updateTile(tile, num);
+                }
+            }
+        }
+
+        function setTwo() {
+            if (!hasEmptyTile()) {
+                return;
+            }
+            let found = false;
+            while (!found) {
+                let r = Math.floor(Math.random() * rows);
+                let c = Math.floor(Math.random() * columns);
+                if (board[r][c] == 0) {
+                    board[r][c] = 2;
+                    let tile = document.getElementById(r.toString() + "-" + c.toString());
+                    tile.innerText = "2";
+                    tile.classList.add("x2");
+                    found = true;
+                }
+            }
+        }
+
+        function hasEmptyTile() {
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < columns; c++) {
+                    if (board[r][c] == 0) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        function hasMoves() {
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < columns; c++) {
+                    if (board[r][c] == 0) return true;
+                    if (c != columns-1 && board[r][c] == board[r][c+1]) return true;
+                    if (r != rows-1 && board[r][c] == board[r+1][c]) return true;
+                }
+            }
+            return false;
+        }
+    </script>
+</body>
+</html>
